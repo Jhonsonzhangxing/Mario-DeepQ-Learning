@@ -86,7 +86,7 @@ class Control(object):
             action = np.zeros([model.ACTIONS], dtype = np.int)    
             if time_elapsed % model.FRAME_PER_ACTION == 0:
                 if random.random() <= epsilon:
-                    print('random action')
+                    print('step: ', time_elapsed, ', do random actions')
                     action = np.random.randint(2, size = model.ACTIONS)
                 else:
                     for i in range(output_network.shape[0]):
@@ -107,16 +107,15 @@ class Control(object):
                 initial_image_batch = [d[0] for d in minibatch]
                 action_batch = [d[1] for d in minibatch]
                 reward_batch = [d[2] for d in minibatch]
-                image_batch = [d[2] for d in minibatch]
+                image_batch = [d[3] for d in minibatch]
                 y_batch = []
                 output_network_batch = model_nn.logits.eval(feed_dict = {model_nn.X: image_batch})
                 for i in range(len(minibatch)):
                     if minibatch[i][4]:
                         y_batch.append(reward_batch[i])
                     else:
-                        y_batch.append(reward_batch[i] + model.GAMMA * output_network_batch[i])
-
-                loss, _ = sess.run([model_nn.cost, model_nn.optimizer], feed_dict = {model.Y: y_batch, model.actions: action_batch, model.X: s_j_batch})
+                        y_batch.append(np.mean(reward_batch[i] + model.GAMMA * output_network_batch[i]))
+                loss, _ = sess.run([model_nn.cost, model_nn.optimizer], feed_dict = {model_nn.Y: y_batch, model_nn.actions: np.array(action_batch), model_nn.X: initial_image_batch})
                 print('step: ', time_elapsed, ', loss: ', loss)
 
             time_elapsed += 1
