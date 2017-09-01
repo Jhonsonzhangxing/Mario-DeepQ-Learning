@@ -38,3 +38,5 @@ REPLAY_MEMORY_SIZE = 50000
 BATCH = 32
 FRAME_PER_ACTION = 1
 ```
+
+![screenshot](mario.png)
