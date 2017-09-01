@@ -11,3 +11,30 @@ to run, just simply
 ```bash
 python mario_level_1.py
 ```
+But before that, checkout hyper-parameters on data/model.py first
+```python
+# {A, left, right}
+# you can add more
+ACTIONS = 3
+
+# probability action to press
+PRESS_THRESHOLD = 0.5
+
+# constant if learn the wrong thing
+GAMMA = 0.99
+
+# step to learn
+OBSERVE = 10000
+EXPLORE = 20000
+
+# constants to do random decision
+FINAL_EPSILON = 0.001
+INITIAL_EPSILON = 0.99
+
+# memory space to hold
+REPLAY_MEMORY_SIZE = 50000
+
+# batch size
+BATCH = 32
+FRAME_PER_ACTION = 1
+```
