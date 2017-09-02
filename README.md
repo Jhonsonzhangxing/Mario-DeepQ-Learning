@@ -14,7 +14,6 @@ python mario_level_1.py
 But before that, checkout hyper-parameters on data/model.py first
 ```python
 # {A, left, right}
-# you can add more
 ACTIONS = 3
 
 # probability action to press
@@ -29,6 +28,7 @@ EXPLORE = 20000
 
 # constants to do random decision
 FINAL_EPSILON = 0.001
+# initial should between 0.5 - 0.9, it will decay over time to do random actions
 INITIAL_EPSILON = 0.99
 
 # memory space to hold
@@ -39,4 +39,6 @@ BATCH = 32
 FRAME_PER_ACTION = 1
 ```
 
-![screenshot](mario.png)
+![screenshot](https://raw.githubusercontent.com/huseinzol05/Mario-DeepQ-Learning/master/screenshotmario/1.png)
+![screenshot](https://raw.githubusercontent.com/huseinzol05/Mario-DeepQ-Learning/master/screenshotmario/2.png)
+![screenshot](https://raw.githubusercontent.com/huseinzol05/Mario-DeepQ-Learning/master/screenshotmario/3.png)
