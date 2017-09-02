@@ -3,22 +3,28 @@ __author__ = 'justinarmstrong'
 import os
 import pygame as pg
 from . import model
+from . import realtime
 import tensorflow as tf
 import numpy as np
 import random
+from matplotlib import pyplot as plt
+import matplotlib.animation as animation
+import seaborn as sns
+sns.set()
 
 epsilon = model.INITIAL_EPSILON
-time_elapsed = 0
+time_elapsed, loss = 0, 0
 sess = tf.InteractiveSession()
 model_nn = model.Model()
 sess.run(tf.global_variables_initializer())
 saver = tf.train.Saver(tf.global_variables())
+fig, axes = plt.subplots(figsize = (3, 3))
+display = realtime.RealtimePlot(axes)
 
 try:
     saver.restore(sess, os.getcwd() + "/model.ckpt")
     print("Done load checkpoint")
-except Exception as e:
-    #print(e)
+except:
     print ("start from fresh variables")
 
 keybinding = {
@@ -71,6 +77,7 @@ class Control(object):
     def update(self):
         global time_elapsed
         global epsilon
+        global loss
         self.current_time = pg.time.get_ticks()
         if self.state.quit:
             self.done = True
@@ -142,6 +149,8 @@ class Control(object):
                 print('step: ', time_elapsed, ', loss: ', loss)
 
             time_elapsed += 1
+            display.add(time_elapsed, loss)
+            plt.pause(0.001)
             model_nn.initial_stack_images = stack_images
             if (time_elapsed + 1) % 1000 == 0:
                 print('step: ', time_elapsed)
