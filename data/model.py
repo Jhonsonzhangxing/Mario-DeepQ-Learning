@@ -2,14 +2,12 @@ import tensorflow as tf
 import numpy as np
 from collections import deque
 
-# {A, left, right}
 ACTIONS = 3
-PRESS_THRESHOLD = 0.5
 GAMMA = 0.99
-OBSERVE = 100
+OBSERVE = 5000
 EXPLORE = 20000
 FINAL_EPSILON = 0.001
-INITIAL_EPSILON = 0.99
+INITIAL_EPSILON = 0.5
 REPLAY_MEMORY_SIZE = 50000
 BATCH = 32
 FRAME_PER_ACTION = 1
@@ -26,12 +24,13 @@ class Model:
 		self.memory = deque()
 		self.initial_stack_images = np.zeros((80, 80, 4))
 		self.X = tf.placeholder("float", [None, 80, 80, 4])
-		self.actions = tf.placeholder("float", [None, ACTIONS])
+		self.action_space = tf.placeholder("float", [None, 2])
+		self.action_left = tf.placeholder("float", [None, 2])
+		self.action_right = tf.placeholder("float", [None, 2])
 		self.Y = tf.placeholder("float", [None])
 
 		w_conv1 = tf.Variable(tf.truncated_normal([8, 8, 4, 32], stddev = 0.1))
 		b_conv1 = tf.Variable(tf.truncated_normal([32], stddev = 0.01))
-		self.test = tf.nn.relu(conv_layer(self.X, w_conv1) + b_conv1)
 		conv1 = tf.nn.relu(conv_layer(self.X, w_conv1, stride = 4) + b_conv1)
 		pooling1 = pooling(conv1)
 
@@ -48,12 +47,22 @@ class Model:
 		b_fc1 = tf.Variable(tf.truncated_normal([512], stddev = 0.01))
 		fc_512 = tf.nn.relu(tf.matmul(conv3, w_fc1) + b_fc1)
 
-		w_fc2 = tf.Variable(tf.truncated_normal([512, ACTIONS], stddev = 0.1))
-		b_fc2 = tf.Variable(tf.truncated_normal([ACTIONS], stddev = 0.01))
-		self.logits = tf.matmul(fc_512, w_fc2) + b_fc2
+		w_space = tf.Variable(tf.truncated_normal([512, 2], stddev = 0.1))
+		b_space = tf.Variable(tf.truncated_normal([2], stddev = 0.01))
+		self.logits_space = tf.matmul(fc_512, w_space) + b_space
+		
+		w_left = tf.Variable(tf.truncated_normal([512, 2], stddev = 0.1))
+		b_left = tf.Variable(tf.truncated_normal([2], stddev = 0.01))
+		self.logits_left = tf.matmul(fc_512, w_left) + b_left
+		
+		w_right = tf.Variable(tf.truncated_normal([512, 2], stddev = 0.1))
+		b_right = tf.Variable(tf.truncated_normal([2], stddev = 0.01))
+		self.logits_right = tf.matmul(fc_512, w_right) + b_right
 
-		readout_action = tf.reduce_sum(tf.multiply(self.logits, self.actions), reduction_indices = 1)
-		self.cost = tf.reduce_mean(tf.square(self.Y - readout_action))
+		readout_space = tf.reduce_sum(tf.multiply(self.logits_space, self.action_space), reduction_indices = 1)
+		readout_left = tf.reduce_sum(tf.multiply(self.logits_left, self.action_left), reduction_indices = 1)
+		readout_right = tf.reduce_sum(tf.multiply(self.logits_right, self.action_right), reduction_indices = 1)
+		self.cost = tf.reduce_mean(tf.square(self.Y - readout_space)) + tf.reduce_mean(tf.square(self.Y - readout_left)) + tf.reduce_mean(tf.square(self.Y - readout_right))
 		self.optimizer = tf.train.AdamOptimizer(1e-6).minimize(self.cost)
 
 

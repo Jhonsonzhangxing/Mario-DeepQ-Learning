@@ -82,18 +82,21 @@ class Control(object):
                 for i in range(model_nn.initial_stack_images.shape[2]):
                     model_nn.initial_stack_images[:, :, i] = return_tuple[0]
                 model_nn.middle_game = True
-            output_network = sess.run(model_nn.logits, feed_dict = {model_nn.X: [model_nn.initial_stack_images]})[0]
             action = np.zeros([model.ACTIONS], dtype = np.int)    
             if time_elapsed % model.FRAME_PER_ACTION == 0:
                 if random.random() <= epsilon:
                     print('step: ', time_elapsed, ', do random actions')
                     action = np.random.randint(2, size = model.ACTIONS)
+                    action[1] = 0
                 else:
-                    for i in range(output_network.shape[0]):
-                        if output_network[i] >= model.PRESS_THRESHOLD:
+                    actions = sess.run([model_nn.logits_space, model_nn.logits_left, model_nn.logits_right], 
+                                              feed_dict = {model_nn.X: [model_nn.initial_stack_images]})
+                    for i in range(len(actions)):
+                        if np.argmax(actions[i]) == 1:
                             action[i] = 1
             else:
                 action = np.zeros([model.ACTIONS], dtype = np.int)
+            print(action)
             edit_keypress(action)
             if epsilon > model.FINAL_EPSILON and time_elapsed > model.OBSERVE:
                 epsilon -= (model.INITIAL_EPSILON - model.FINAL_EPSILON) / model.EXPLORE
@@ -109,13 +112,33 @@ class Control(object):
                 reward_batch = [d[2] for d in minibatch]
                 image_batch = [d[3] for d in minibatch]
                 y_batch = []
-                output_network_batch = model_nn.logits.eval(feed_dict = {model_nn.X: image_batch})
+                action_space = np.zeros((model.BATCH, 2))
+                action_left = np.zeros((model.BATCH, 2))
+                action_right = np.zeros((model.BATCH, 2))
+                actions = sess.run([model_nn.logits_space, model_nn.logits_left, model_nn.logits_right], 
+                                              feed_dict = {model_nn.X: image_batch})
                 for i in range(len(minibatch)):
                     if minibatch[i][4]:
                         y_batch.append(reward_batch[i])
                     else:
-                        y_batch.append(np.mean(reward_batch[i] + model.GAMMA * output_network_batch[i]))
-                loss, _ = sess.run([model_nn.cost, model_nn.optimizer], feed_dict = {model_nn.Y: y_batch, model_nn.actions: np.array(action_batch), model_nn.X: initial_image_batch})
+                        y_batch.append(reward_batch[i] + model.GAMMA * np.argmax(actions[0][i]) + model.GAMMA * np.argmax(actions[1][i]) + model.GAMMA * np.argmax(actions[2][i]))
+                    if action_batch[i][0] == 0:
+                        action_space[i][0] = 1
+                    else:
+                        action_space[i][1] = 1
+                    if action_batch[i][1] == 0:
+                        action_left[i][0] = 1
+                    else:
+                        action_left[i][1] = 1
+                    if action_batch[i][2] == 0:
+                        action_right[i][0] = 1
+                    else:
+                        action_right[i][1] = 1
+                loss, _ = sess.run([model_nn.cost, model_nn.optimizer], feed_dict = {model_nn.Y: y_batch, 
+                                                                                     model_nn.action_space: action_space,
+                                                                                     model_nn.action_left: action_left,
+                                                                                     model_nn.action_right: action_right,
+                                                                                     model_nn.X: initial_image_batch})
                 print('step: ', time_elapsed, ', loss: ', loss)
 
             time_elapsed += 1
