@@ -149,12 +149,6 @@ class Control(object):
                 print('checkpoint saved')
                 saver.save(sess, os.getcwd() + "/model.ckpt")
 
-
-
-
-
-
-
     def flip_state(self):
         previous, self.state_name = self.state_name, self.state.next
         persist = self.state.cleanup()
